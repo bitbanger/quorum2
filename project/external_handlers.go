@@ -9,6 +9,8 @@ import (
 )
 
 func (q *QuorumServer) DistRead(req *DistReadRequest, resp *DistReadResponse) error {
+	fmt.Printf("client wants to read file %q\n", req.Filename)
+
 	// The client wants to read a file.
 
 	// Get the file first (before we need to know whether to decrypt it).
@@ -58,7 +60,7 @@ func (q *QuorumServer) DistRead(req *DistReadRequest, resp *DistReadResponse) er
 			return fmt.Errorf("can't perform a read on a secure file without a public key for the reading client")
 		}
 
-		if _, err := unmarshalPublicKey(req.ClientPublicKey); err != nil {
+		if _, err := unMarshalPublicKey(req.ClientPublicKey); err != nil {
 			return fmt.Errorf("invalid client public key on a key piece read request")
 		}
 	}
@@ -304,6 +306,8 @@ func (q *QuorumServer) doReads(preFilename string, digestOnly bool, keyRead bool
 }
 
 func (q *QuorumServer) DistWrite(req *DistWriteRequest, resp *DistWriteResponse) error {
+	fmt.Printf("client wants to write value %q\n", req.Data)
+
 	// secure := len(req.KeyPieces) > 0
 	secure := req.Secure
 
@@ -503,7 +507,7 @@ func (q *QuorumServer) DistCryptoReplicas(req *DistCryptoReplicasRequest, resp *
 			return fmt.Errorf("don't have a public key for replica %d", pub)
 		}
 
-		replicaPubKeys[repl] = string(marshalPublicKey(pub))
+		replicaPubKeys[repl] = string(MarshalPublicKey(pub))
 	}
 
 	resp.ReplicaPubKeys = replicaPubKeys

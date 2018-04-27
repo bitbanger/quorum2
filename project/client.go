@@ -27,7 +27,7 @@ type quorumClient struct {
 }
 
 func NewQuorumClient(replicaAddrs []string) (QuorumClient, error) {
-	priv, pub, err := makeRSAKeyPair()
+	priv, pub, err := MakeRSAKeyPair()
 	if err != nil {
 		return nil, fmt.Errorf("error making RSA key pair: %s", err)
 	}
@@ -79,7 +79,7 @@ func (c *quorumClient) Write(filename string, data []byte) string {
 	keyPieceMap := make(map[int]string)
 	keyPieceIdx := 0
 	for repl, pubStr := range rpks {
-		pubKey, err := unmarshalPublicKey([]byte(pubStr))
+		pubKey, err := unMarshalPublicKey([]byte(pubStr))
 		if err != nil {
 			return fmt.Sprintf("error unmarshaling public key: %s", err)
 		}
@@ -114,6 +114,8 @@ func (c *quorumClient) Write(filename string, data []byte) string {
 func (c *quorumClient) Read(filename string) string {
 	// Pick a random replica.
 	replicaAddr := c.replicaAddrs[rand.Intn(len(c.replicaAddrs))]
+
+	fmt.Printf("starting read num %d\n", c.readNum)
 
 	resp, err := distRead(filename, replicaAddr, false, true, c.publicKey)
 	if err != nil {

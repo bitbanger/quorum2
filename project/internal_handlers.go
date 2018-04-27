@@ -118,7 +118,7 @@ func (q *QuorumServer) Read(req *ReadRequest, resp *ReadResponse) error {
 				return fmt.Errorf("can't return a key piece without encrypting it with a client public key")
 			}
 
-			clientPublicKey, err := unmarshalPublicKey(req.ClientPublicKey)
+			clientPublicKey, err := unMarshalPublicKey(req.ClientPublicKey)
 			if err != nil {
 				return fmt.Errorf("invalid client public key on a key piece read request")
 			}

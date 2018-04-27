@@ -8,6 +8,7 @@ import (
 	"crypto/rsa"
 	"crypto/sha256"
 	"crypto/x509"
+	"encoding/base64"
 	"fmt"
 	"io"
 )
@@ -96,23 +97,43 @@ func decrypt(ciphertext []byte, key []byte) ([]byte, error) {
 	return ciphertext, nil
 }
 
-func marshalPrivateKey(key *rsa.PrivateKey) []byte {
-	return x509.MarshalPKCS1PrivateKey(key)
+func MarshalPrivateKey(key *rsa.PrivateKey) []byte {
+	return []byte(base64.StdEncoding.EncodeToString(x509.MarshalPKCS1PrivateKey(key)))
 }
 
-func unmarshalPrivateKey(keyBytes []byte) (*rsa.PrivateKey, error) {
-	return x509.ParsePKCS1PrivateKey(keyBytes)
+func unMarshalPrivateKey(keyBytes []byte) (*rsa.PrivateKey, error) {
+	dec, err := base64.StdEncoding.DecodeString(string(keyBytes))
+	if err != nil {
+		return nil, err
+	}
+
+	p, err := x509.ParsePKCS1PrivateKey(dec)
+	if err != nil {
+		return nil, err
+	}
+
+	return p, nil
 }
 
-func marshalPublicKey(key *rsa.PublicKey) []byte {
-	return x509.MarshalPKCS1PublicKey(key)
+func MarshalPublicKey(key *rsa.PublicKey) []byte {
+	return []byte(base64.StdEncoding.EncodeToString(x509.MarshalPKCS1PublicKey(key)))
 }
 
-func unmarshalPublicKey(keyBytes []byte) (*rsa.PublicKey, error) {
-	return x509.ParsePKCS1PublicKey(keyBytes)
+func unMarshalPublicKey(keyBytes []byte) (*rsa.PublicKey, error) {
+	dec, err := base64.StdEncoding.DecodeString(string(keyBytes))
+	if err != nil {
+		return nil, err
+	}
+
+	p, err := x509.ParsePKCS1PublicKey(dec)
+	if err != nil {
+		return nil, err
+	}
+
+	return p, nil
 }
 
-func makeRSAKeyPair() (*rsa.PrivateKey, *rsa.PublicKey, error) {
+func MakeRSAKeyPair() (*rsa.PrivateKey, *rsa.PublicKey, error) {
 	private, err := rsa.GenerateKey(rand.Reader, RSA_KEY_BITS)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error generating keys: %s", err)

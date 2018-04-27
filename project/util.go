@@ -25,7 +25,7 @@ func distRead(filename string, replicaAddr string, digestOnly bool, latency bool
 		Filename:        filename,
 		DigestOnly:      digestOnly,
 		FakeLatency:     latency,
-		ClientPublicKey: marshalPublicKey(clientPubKey),
+		ClientPublicKey: MarshalPublicKey(clientPubKey),
 	}
 
 	var resp DistReadResponse

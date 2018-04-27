@@ -3,6 +3,8 @@ package project
 const (
 	RSA_KEY_BITS = 2048
 
+	START_PORT = 1234
+
 	DATA_REPLICAS = 5
 	KEY_REPLICAS  = 10
 
