@@ -1,4 +1,4 @@
-package main
+package project
 
 const (
 	RSA_KEY_BITS = 2048

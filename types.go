@@ -1,4 +1,4 @@
-package main
+package project
 
 // This is the most important file in the project.
 

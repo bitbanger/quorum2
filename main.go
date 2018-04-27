@@ -1,4 +1,4 @@
-package main
+package project
 
 import (
 	"crypto/rsa"
@@ -30,7 +30,7 @@ func makeServer(quorum *QuorumServer, serverUpChan chan bool) {
 
 var quora []*QuorumServer
 
-func main() {
+func test() {
 	numServers := 16
 
 	fmt.Printf("write quorum: %d\n", WRITE_QUORUM)
