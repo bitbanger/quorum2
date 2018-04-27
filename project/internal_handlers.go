@@ -22,7 +22,7 @@ type Item struct {
 // QuorumServer is an implementation of the Quorum interface.
 type QuorumServer struct {
 	replicaID      int
-	numReplicas    int
+	replicaAddrs   map[int]string
 	storage        map[string]*Item
 	locks          map[string]*sync.RWMutex
 	locksLock      *sync.RWMutex
@@ -31,10 +31,10 @@ type QuorumServer struct {
 	privateKey     *rsa.PrivateKey
 }
 
-func newQuorumServer(replicaID, numReplicas int, replicaPubKeys map[int]*rsa.PublicKey, privateKey *rsa.PrivateKey, publicKey *rsa.PublicKey) *QuorumServer {
+func newQuorumServer(replicaID int, replicaAddrs map[int]string, replicaPubKeys map[int]*rsa.PublicKey, privateKey *rsa.PrivateKey, publicKey *rsa.PublicKey) *QuorumServer {
 	return &QuorumServer{
 		replicaID:      replicaID,
-		numReplicas:    numReplicas,
+		replicaAddrs:   replicaAddrs,
 		storage:        make(map[string]*Item),
 		locks:          make(map[string]*sync.RWMutex),
 		locksLock:      &sync.RWMutex{},

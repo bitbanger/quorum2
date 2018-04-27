@@ -93,10 +93,10 @@ func tid64(tid uint64) string {
 	return base64.StdEncoding.EncodeToString(uint64Bytes(tid))
 }
 
-func readReq(req *ReadRequest, replicaID int) (*ReadResponse, error) {
-	conn, err := net.Dial("tcp", replicaAddress(replicaID))
+func readReq(req *ReadRequest, replicaAddr string) (*ReadResponse, error) {
+	conn, err := net.Dial("tcp", replicaAddr)
 	if err != nil {
-		return nil, fmt.Errorf("error connecting to replica %d: %s", replicaID, err)
+		return nil, fmt.Errorf("error connecting to replica %d: %s", replicaAddr, err)
 	}
 
 	client := rpc.NewClient(conn)
@@ -104,16 +104,16 @@ func readReq(req *ReadRequest, replicaID int) (*ReadResponse, error) {
 	var resp ReadResponse
 
 	if err = client.Call("QuorumServer.Read", req, &resp); err != nil {
-		return nil, fmt.Errorf("error calling read method on replica %d: %s", replicaID, err)
+		return nil, fmt.Errorf("error calling read method on replica %d: %s", replicaAddr, err)
 	}
 
 	return &resp, nil
 }
 
-func writeReq(req *WriteRequest, replicaID int) (*WriteResponse, error) {
-	conn, err := net.Dial("tcp", replicaAddress(replicaID))
+func writeReq(req *WriteRequest, replicaAddr string) (*WriteResponse, error) {
+	conn, err := net.Dial("tcp", replicaAddr)
 	if err != nil {
-		return nil, fmt.Errorf("error connecting to replica %d: %s", replicaID, err)
+		return nil, fmt.Errorf("error connecting to replica %d: %s", replicaAddr, err)
 	}
 
 	client := rpc.NewClient(conn)
@@ -121,7 +121,7 @@ func writeReq(req *WriteRequest, replicaID int) (*WriteResponse, error) {
 	var resp WriteResponse
 
 	if err = client.Call("QuorumServer.Write", req, &resp); err != nil {
-		return nil, fmt.Errorf("error calling write method on replica %d: %s", replicaID, err)
+		return nil, fmt.Errorf("error calling write method on replica %d: %s", replicaAddr, err)
 	}
 
 	return &resp, nil

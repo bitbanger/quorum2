@@ -95,9 +95,9 @@ func (q *QuorumServer) doReads(preFilename string, digestOnly bool, keyRead bool
 
 	var replicas []int
 	if keyRead {
-		replicas = replicasForKey(filename, KEY_REPLICAS, q.numReplicas)
+		replicas = replicasForKey(filename, KEY_REPLICAS, len(q.replicaAddrs))
 	} else {
-		replicas = replicasForKey(filename, DATA_REPLICAS, q.numReplicas)
+		replicas = replicasForKey(filename, DATA_REPLICAS, len(q.replicaAddrs))
 	}
 
 	// Tag it with the TID for keys, after calculating the replica set.
@@ -136,7 +136,7 @@ func (q *QuorumServer) doReads(preFilename string, digestOnly bool, keyRead bool
 				LatencyMillis:   latencyMillis,
 				IsKeyRead:       keyRead,
 				ClientPublicKey: clientPublicKeyBytes,
-			}, replica)
+			}, q.replicaAddrs[replica])
 
 			if err != nil {
 				fmt.Printf("read RPC error: %s\n", err)
@@ -200,9 +200,9 @@ func (q *QuorumServer) doReads(preFilename string, digestOnly bool, keyRead bool
 	notFounds := 0
 	successResps := []*ReadResponse{}
 	// POSSIBLE TODO: fix this (and the one in DistWrite) to time out independently of
-	// the RPCs, and don't block expecting q.numReplicas responses?
+	// the RPCs, and don't block expecting len(q.replicaAddrs) responses?
 	// for replicaResp := range responses {
-	for i := 0; i < q.numReplicas; i++ {
+	for i := 0; i < len(q.replicaAddrs); i++ {
 		replicaResp := <-responses
 
 		switch {
@@ -289,7 +289,7 @@ func (q *QuorumServer) doReads(preFilename string, digestOnly bool, keyRead bool
 							Data:          latestResp.Data,
 							LatencyMillis: latencyMillis,
 							Secure:        latestResp.Secure,
-						}, nr)
+						}, q.replicaAddrs[nr])
 					}(nr)
 				}
 			}()
@@ -312,9 +312,9 @@ func (q *QuorumServer) DistWrite(req *DistWriteRequest, resp *DistWriteResponse)
 	}
 
 	// Now that we've calculated the write version, we'll try to write to a quorum.
-	dataReplicas := replicasForKey(req.Filename, DATA_REPLICAS, q.numReplicas)
+	dataReplicas := replicasForKey(req.Filename, DATA_REPLICAS, len(q.replicaAddrs))
 	// TODO: make sure countries all have the same key piece.
-	keyReplicas := replicasForKey(req.Filename, KEY_REPLICAS, q.numReplicas)
+	keyReplicas := replicasForKey(req.Filename, KEY_REPLICAS, len(q.replicaAddrs))
 
 	// fmt.Printf("wreplicas: %+v\n", replicas)
 
@@ -413,7 +413,7 @@ func (q *QuorumServer) doWrites(replicas []int, tid uint64, data []byte, req *Di
 				LatencyMillis: latencyMillis,
 				TagWithTID:    tagWithTID,
 				Secure:        secure,
-			}, replica)
+			}, q.replicaAddrs[replica])
 
 			if err != nil {
 				fmt.Printf("write RPC error: %s\n", err)
@@ -455,7 +455,7 @@ func (q *QuorumServer) doWrites(replicas []int, tid uint64, data []byte, req *Di
 	writeFailures := 0
 	successes := 0
 	// for replicaResp := range responses {
-	for i := 0; i < q.numReplicas; i++ {
+	for i := 0; i < len(q.replicaAddrs); i++ {
 		replicaResp := <-responses
 
 		switch {
@@ -496,7 +496,7 @@ func (q *QuorumServer) DistCryptoReplicas(req *DistCryptoReplicasRequest, resp *
 
 	replicaPubKeys := make(map[int]string)
 
-	replicas := replicasForKey(req.Filename, KEY_REPLICAS, q.numReplicas)
+	replicas := replicasForKey(req.Filename, KEY_REPLICAS, len(q.replicaAddrs))
 	for _, repl := range replicas {
 		pub, ok := q.replicaPubKeys[repl]
 		if !ok {
