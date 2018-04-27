@@ -13,10 +13,10 @@ import (
 	"strings"
 )
 
-func clientRead(filename string, replicaID int, digestOnly bool, latency bool, clientPubKey *rsa.PublicKey) (*ClientReadResponse, error) {
-	conn, err := net.Dial("tcp", replicaAddress(replicaID))
+func clientRead(filename string, replicaAddr string, digestOnly bool, latency bool, clientPubKey *rsa.PublicKey) (*ClientReadResponse, error) {
+	conn, err := net.Dial("tcp", replicaAddr)
 	if err != nil {
-		return nil, fmt.Errorf("error connecting to replica %d: %s", replicaID, err)
+		return nil, fmt.Errorf("error connecting to replica %s: %s", replicaAddr, err)
 	}
 
 	client := rpc.NewClient(conn)
@@ -31,16 +31,16 @@ func clientRead(filename string, replicaID int, digestOnly bool, latency bool, c
 	var resp ClientReadResponse
 
 	if err = client.Call("QuorumServer.ClientRead", req, &resp); err != nil {
-		return nil, fmt.Errorf("error calling client read method on replica %d: %s", replicaID, err)
+		return nil, fmt.Errorf("error calling client read method on replica %s: %s", replicaAddr, err)
 	}
 
 	return &resp, nil
 }
 
-func clientWrite(filename string, data []byte, replicaID int, latency bool, secure bool, keyPieces map[int]string) (*ClientWriteResponse, error) {
-	conn, err := net.Dial("tcp", replicaAddress(replicaID))
+func clientWrite(filename string, data []byte, replicaAddr string, latency bool, secure bool, keyPieces map[int]string) (*ClientWriteResponse, error) {
+	conn, err := net.Dial("tcp", replicaAddr)
 	if err != nil {
-		return nil, fmt.Errorf("error connecting to replica %d: %s", replicaID, err)
+		return nil, fmt.Errorf("error connecting to replica %d: %s", replicaAddr, err)
 	}
 
 	client := rpc.NewClient(conn)
@@ -56,16 +56,16 @@ func clientWrite(filename string, data []byte, replicaID int, latency bool, secu
 	var resp ClientWriteResponse
 
 	if err = client.Call("QuorumServer.ClientWrite", req, &resp); err != nil {
-		return nil, fmt.Errorf("error calling client write method on replica %d: %s", replicaID, err)
+		return nil, fmt.Errorf("error calling client write method on replica %d: %s", replicaAddr, err)
 	}
 
 	return &resp, nil
 }
 
-func clientCryptoRepls(req *ClientCryptoReplicasRequest, replicaID int) (*ClientCryptoReplicasResponse, error) {
-	conn, err := net.Dial("tcp", replicaAddress(replicaID))
+func clientCryptoRepls(req *ClientCryptoReplicasRequest, replicaAddr string) (*ClientCryptoReplicasResponse, error) {
+	conn, err := net.Dial("tcp", replicaAddr)
 	if err != nil {
-		return nil, fmt.Errorf("error connecting to replica %d: %s", replicaID, err)
+		return nil, fmt.Errorf("error connecting to replica %d: %s", replicaAddr, err)
 	}
 
 	client := rpc.NewClient(conn)
@@ -73,7 +73,7 @@ func clientCryptoRepls(req *ClientCryptoReplicasRequest, replicaID int) (*Client
 	var resp ClientCryptoReplicasResponse
 
 	if err = client.Call("QuorumServer.ClientCryptoReplicas", req, &resp); err != nil {
-		return nil, fmt.Errorf("error calling crypto replicas method on replica %d: %s", replicaID, err)
+		return nil, fmt.Errorf("error calling crypto replicas method on replica %d: %s", replicaAddr, err)
 	}
 
 	return &resp, nil
