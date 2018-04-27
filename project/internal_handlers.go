@@ -46,7 +46,7 @@ func newQuorumServer(replicaID, numReplicas int, replicaPubKeys map[int]*rsa.Pub
 
 func (q *QuorumServer) getFileLock(filename string) *sync.RWMutex {
 	// Try to get the lock for this file.
-	q.locksLock.RLock
+	q.locksLock.RLock()
 	fileLock, ok := q.locks[filename]
 	q.locksLock.RUnlock()
 
