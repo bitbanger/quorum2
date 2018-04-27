@@ -14,11 +14,11 @@ type Quorum interface {
 	// be reflected in the response.
 	Write(req *WriteRequest, resp *WriteResponse) error
 
-	ClientRead(req *ClientReadRequest, resp *ClientReadResponse) error
+	DistRead(req *DistReadRequest, resp *DistReadResponse) error
 
-	ClientWrite(req *ClientWriteRequest, resp *ClientWriteResponse) error
+	DistWrite(req *DistWriteRequest, resp *DistWriteResponse) error
 
-	ClientCryptoReplicas(req *ClientCryptoReplicasRequest, resp *ClientCryptoReplicasResponse) error
+	DistCryptoReplicas(req *DistCryptoReplicasRequest, resp *DistCryptoReplicasResponse) error
 }
 
 // ReadRequest represents a request to read a file from a replica.
@@ -65,14 +65,14 @@ type WriteResponse struct {
 	TID     uint64
 }
 
-type ClientReadRequest struct {
+type DistReadRequest struct {
 	Filename        string
 	DigestOnly      bool
 	FakeLatency     bool
 	ClientPublicKey []byte
 }
 
-type ClientReadResponse struct {
+type DistReadResponse struct {
 	Success            bool
 	Found              bool
 	EncryptedKeyPieces []string
@@ -85,7 +85,7 @@ type ClientReadResponse struct {
 	Hash
 }
 
-type ClientWriteRequest struct {
+type DistWriteRequest struct {
 	Filename    string
 	Data        []byte
 	Secure      bool
@@ -93,16 +93,16 @@ type ClientWriteRequest struct {
 	FakeLatency bool
 }
 
-type ClientWriteResponse struct {
+type DistWriteResponse struct {
 	Success    bool
 	Overridden bool
 	TID        uint64
 }
 
-type ClientCryptoReplicasRequest struct {
+type DistCryptoReplicasRequest struct {
 	Filename string
 }
 
-type ClientCryptoReplicasResponse struct {
+type DistCryptoReplicasResponse struct {
 	ReplicaPubKeys map[int]string
 }

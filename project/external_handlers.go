@@ -8,7 +8,7 @@ import (
 	// "strings"
 )
 
-func (q *QuorumServer) ClientRead(req *ClientReadRequest, resp *ClientReadResponse) error {
+func (q *QuorumServer) DistRead(req *DistReadRequest, resp *DistReadResponse) error {
 	// The client wants to read a file.
 
 	// Get the file first (before we need to know whether to decrypt it).
@@ -199,7 +199,7 @@ func (q *QuorumServer) doReads(preFilename string, digestOnly bool, keyRead bool
 	failures := 0
 	notFounds := 0
 	successResps := []*ReadResponse{}
-	// POSSIBLE TODO: fix this (and the one in ClientWrite) to time out independently of
+	// POSSIBLE TODO: fix this (and the one in DistWrite) to time out independently of
 	// the RPCs, and don't block expecting q.numReplicas responses?
 	// for replicaResp := range responses {
 	for i := 0; i < q.numReplicas; i++ {
@@ -303,7 +303,7 @@ func (q *QuorumServer) doReads(preFilename string, digestOnly bool, keyRead bool
 	return nil, false, false
 }
 
-func (q *QuorumServer) ClientWrite(req *ClientWriteRequest, resp *ClientWriteResponse) error {
+func (q *QuorumServer) DistWrite(req *DistWriteRequest, resp *DistWriteResponse) error {
 	// secure := len(req.KeyPieces) > 0
 	secure := req.Secure
 
@@ -344,32 +344,32 @@ func (q *QuorumServer) ClientWrite(req *ClientWriteRequest, resp *ClientWriteRes
 
 	// First, we need to read the digests from all the replicas
 	// to get the most recent version number. We'll call our own
-	// ClientRead function to do that.
-	clientReadReq := &ClientReadRequest{
+	// DistRead function to do that.
+	distReadReq := &DistReadRequest{
 		Filename:    req.Filename,
 		DigestOnly:  true,
 		FakeLatency: req.FakeLatency,
 	}
 
-	var clientReadResp ClientReadResponse
+	var distReadResp DistReadResponse
 
-	if err := q.ClientRead(clientReadReq, &clientReadResp); err != nil {
+	if err := q.DistRead(distReadReq, &distReadResp); err != nil {
 		return fmt.Errorf("error reading latest version from replicas: %s", err)
 	}
 
-	if !clientReadResp.Success {
+	if !distReadResp.Success {
 		return fmt.Errorf("unknown error reaching quorum for latest version from replicas...maybe too many replicas are down?")
 	}
 
 	writeVersion := 0
-	if clientReadResp.Found {
+	if distReadResp.Found {
 		// This "+ 1" could be tweaked to be larger
 		// if we wanted a higher chance of bullying concurrent
 		// writers. It would probably correspond to the number
 		// of concurrent writers we're guaranteed to supercede,
 		// minus one.
 		// TODO: bully value in per-request config
-		writeVersion = clientReadResp.Version + 1
+		writeVersion = distReadResp.Version + 1
 	}
 
 	// Now we can actually perform the data writes.
@@ -382,8 +382,8 @@ func (q *QuorumServer) ClientWrite(req *ClientWriteRequest, resp *ClientWriteRes
 	return nil
 }
 
-func (q *QuorumServer) doWrites(replicas []int, tid uint64, data []byte, req *ClientWriteRequest, writeVersion int, tagWithTID bool, needSuccesses int, secure bool) *ClientWriteResponse {
-	resp := &ClientWriteResponse{
+func (q *QuorumServer) doWrites(replicas []int, tid uint64, data []byte, req *DistWriteRequest, writeVersion int, tagWithTID bool, needSuccesses int, secure bool) *DistWriteResponse {
+	resp := &DistWriteResponse{
 		TID: tid,
 	}
 
@@ -487,7 +487,7 @@ func (q *QuorumServer) doWrites(replicas []int, tid uint64, data []byte, req *Cl
 	return resp
 }
 
-func (q *QuorumServer) ClientCryptoReplicas(req *ClientCryptoReplicasRequest, resp *ClientCryptoReplicasResponse) error {
+func (q *QuorumServer) DistCryptoReplicas(req *DistCryptoReplicasRequest, resp *DistCryptoReplicasResponse) error {
 	// Calculate the KEY_REPLICAS replicas for the normal filename.
 	// Even though the key filename will be tagged with a TID later,
 	// we'll manually make sure that those tags don't change the key's

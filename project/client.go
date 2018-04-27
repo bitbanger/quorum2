@@ -47,7 +47,7 @@ func (c *quorumClient) Write(filename string, data []byte) string {
 
 	// TODO: actually do this, so we can get the public keys before sending the
 	// key pieces to a single, untrusted replica for distribution.
-	crResp, err := clientCryptoRepls(&ClientCryptoReplicasRequest{
+	crResp, err := clientCryptoRepls(&DistCryptoReplicasRequest{
 		Filename: filename,
 	}, replicaAddr)
 	if err != nil {
@@ -115,7 +115,7 @@ func (c *quorumClient) Read(filename string) string {
 	// Pick a random replica.
 	replicaAddr := c.replicaAddrs[rand.Intn(len(c.replicaAddrs))]
 
-	resp, err := clientRead(filename, replicaAddr, false, true, c.publicKey)
+	resp, err := distRead(filename, replicaAddr, false, true, c.publicKey)
 	if err != nil {
 		return fmt.Sprintf("error reading %s: %s", filename, err)
 	}
