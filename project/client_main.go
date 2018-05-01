@@ -17,9 +17,9 @@ const (
 
 	LATENCY_SCALE = 1500
 
-	WRITERS = 5
+	WRITERS = 20
 
-	READERS = 3
+	READERS = 5
 )
 
 var (
@@ -79,6 +79,10 @@ func write(qc QuorumClient) {
 		return
 	}
 
+	if resp.Overridden {
+		overridden++
+	}
+
 	if !resp.Success {
 		return
 	}
@@ -97,10 +101,6 @@ func write(qc QuorumClient) {
 		if last := atomic.LoadInt64(&lastWrite); wt < last || atomic.CompareAndSwapInt64(&lastWrite, last, wt) {
 			break
 		}
-	}
-
-	if resp.Overridden {
-		overridden++
 	}
 
 	// fmt.Printf("write %d succeeded!\n", rt)
