@@ -83,7 +83,7 @@ func write(qc QuorumClient) {
 		return
 	}
 
-	fmt.Printf("write TID %s done\n", tid64(resp.TID))
+	// fmt.Printf("write TID %s done\n", tid64(resp.TID))
 
 	tid := resp.TID
 
@@ -109,7 +109,7 @@ func write(qc QuorumClient) {
 func read(qc QuorumClient) {
 	rt := time.Now().UnixNano()
 
-	fmt.Printf("read %d starting\n", rt)
+	// fmt.Printf("read %d starting\n", rt)
 
 	lw := atomic.LoadInt64(&lastWrite)
 
@@ -131,17 +131,19 @@ func read(qc QuorumClient) {
 		// That's fine.
 		futureReads++
 		successes++
+		fmt.Printf("Read %d got up-to-date value %q\n", rt, resp.Data)
 		return
 	}
 
 	if rt < lw {
 		olderReads++
-		fmt.Printf("Read %d got old TID %s\n", rt, tid64(resp.TID))
-		fmt.Printf("Read value older than last write before read! :(\n")
+		// fmt.Printf("Read %d got old TID %s\n", rt, tid64(resp.TID))
+		// fmt.Printf("Read value older than last write before read! :(\n")
 		return
 	}
 
 	successes++
+	fmt.Printf("Read %d got up-to-date value %q\n", rt, resp.Data)
 
 	// fmt.Printf("read %d returned value %q\n", rt, resp.Data)
 }
@@ -175,6 +177,9 @@ func RunClient() {
 			}
 		}()
 	}
+
+	// Wait for some writes to happen before we start reading.
+	time.Sleep(5*time.Second)
 
 	for i := 0; i < READERS; i++ {
 		go func() {
