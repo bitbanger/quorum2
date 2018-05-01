@@ -1,2 +1,4 @@
 quorum
+client/client
+server/server
 *.swp

@@ -11,7 +11,6 @@ import (
 	// "strings"
 	"os"
 	// "time"
-
 	// sssa "./sssa-golang"
 )
 
@@ -36,7 +35,6 @@ func RunServer() {
 	}
 
 	addrMap, keyMap := parseReplicas(os.Args[3])
-
 
 	qs := newQuorumServer(rid, addrMap, keyMap, priv, keyMap[rid])
 

@@ -5,9 +5,35 @@ import (
 	"crypto/rsa"
 	"fmt"
 	"math/rand"
-	"strings"
-	"time"
 	"os"
+	"strings"
+	"sync"
+	"sync/atomic"
+	"time"
+)
+
+const (
+	LATENCY_BASE = 500
+
+	LATENCY_SCALE = 1500
+
+	WRITERS = 5
+
+	READERS = 3
+)
+
+var (
+	lastWrite int64
+
+	writes     map[uint64]int64
+	writesLock *sync.RWMutex
+
+	totalReads  int
+	totalWrites int
+	overridden  int
+	successes   int
+	futureReads int
+	olderReads  int
 )
 
 func parseReplicas(filename string) (map[int]string, map[int]*rsa.PublicKey) {
@@ -40,10 +66,93 @@ func parseReplicas(filename string) (map[int]string, map[int]*rsa.PublicKey) {
 	return addrMap, keyMap
 }
 
+func write(qc QuorumClient) {
+	// rt := time.Now().UnixNano()
+
+	// fmt.Printf("write %d starting\n", rt)
+
+	time.Sleep(LATENCY_BASE + time.Duration(rand.Intn(LATENCY_SCALE))*time.Millisecond)
+
+	resp, err := qc.Write("test1", []byte(fmt.Sprintf("conflict%d", rand.Intn(10))))
+	if err != nil {
+		// fmt.Printf("write %d returned error: %v\n", rt, err)
+		return
+	}
+
+	if !resp.Success {
+		return
+	}
+
+	fmt.Printf("write TID %s done\n", tid64(resp.TID))
+
+	tid := resp.TID
+
+	wt := time.Now().UnixNano()
+
+	writesLock.Lock()
+	writes[tid] = wt
+	writesLock.Unlock()
+
+	for {
+		if last := atomic.LoadInt64(&lastWrite); wt < last || atomic.CompareAndSwapInt64(&lastWrite, last, wt) {
+			break
+		}
+	}
+
+	if resp.Overridden {
+		overridden++
+	}
+
+	// fmt.Printf("write %d succeeded!\n", rt)
+}
+
+func read(qc QuorumClient) {
+	rt := time.Now().UnixNano()
+
+	fmt.Printf("read %d starting\n", rt)
+
+	lw := atomic.LoadInt64(&lastWrite)
+
+	time.Sleep(LATENCY_BASE + time.Duration(rand.Intn(LATENCY_SCALE))*time.Millisecond)
+	resp, err := qc.Read("test1")
+	if err != nil {
+		fmt.Printf("read %d returned error: %v\n", rt, err)
+		return
+	}
+	if !resp.Success {
+		return
+	}
+
+	writesLock.RLock()
+	rt, ok := writes[resp.TID]
+	writesLock.RUnlock()
+	if !ok {
+		// We got a write before it was "fully" registered as a success.
+		// That's fine.
+		futureReads++
+		successes++
+		return
+	}
+
+	if rt < lw {
+		olderReads++
+		fmt.Printf("Read %d got old TID %s\n", rt, tid64(resp.TID))
+		fmt.Printf("Read value older than last write before read! :(\n")
+		return
+	}
+
+	successes++
+
+	// fmt.Printf("read %d returned value %q\n", rt, resp.Data)
+}
+
 func RunClient() {
 	if len(os.Args) < 2 {
-		fmt.Printf("need a list of replicas & their keys\n")
+		// fmt.Printf("need a list of replicas & their keys\n")
 	}
+
+	writes = make(map[uint64]int64)
+	writesLock = &sync.RWMutex{}
 
 	addrMap, _ := parseReplicas(os.Args[1])
 
@@ -54,38 +163,32 @@ func RunClient() {
 
 	qc, err := NewQuorumClient(addrList)
 	if err != nil {
-		fmt.Printf("error making client: %s", err)
+		// fmt.Printf("error making client: %s", err)
 		return
 	}
 
-	go func() {
-		// for i := 0; i < 10; i++ {
-		for {
-			fmt.Println(qc.Write("test1", []byte(fmt.Sprintf("conflict%d", rand.Intn(10)))))
-			time.Sleep(1000 + time.Duration(rand.Intn(3000))*time.Millisecond)
-		}
-	}()
+	for i := 0; i < WRITERS; i++ {
+		go func() {
+			for {
+				write(qc)
+				totalWrites++
+			}
+		}()
+	}
 
-	go func() {
-		// for i := 0; i < iters; i++ {
-		for {
-			fmt.Println(qc.Write("test1", []byte(fmt.Sprintf("conflict%d", rand.Intn(10)))))
-			time.Sleep(1000 + time.Duration(rand.Intn(3000))*time.Millisecond)
-		}
-	}()
-
-	go func() {
-		// for i := 0; i < iters; i++ {
-		for {
-			fmt.Println(qc.Write("test1", []byte(fmt.Sprintf("conflict%d", rand.Intn(10)))))
-			time.Sleep(1000 + time.Duration(rand.Intn(3000))*time.Millisecond)
-		}
-	}()
+	for i := 0; i < READERS; i++ {
+		go func() {
+			for {
+				read(qc)
+				totalReads++
+			}
+		}()
+	}
 
 	go func() {
 		for {
-			time.Sleep(500 * time.Millisecond)
-			fmt.Printf("\n%s\n\n", qc.Read("test1"))
+			time.Sleep(5 * time.Second)
+			fmt.Printf("total reads: %d\ntotal writes: %d\n\nconcurrent writes overridden: %d\nreads from the future (also successes): %d\nreads with stale values (should be 0): %d\nread successes: %d\n", totalReads, totalWrites, overridden, futureReads, olderReads, successes)
 		}
 	}()
 
