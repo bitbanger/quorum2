@@ -1,0 +1,1 @@
+Run server/run.sh to start the servers and client/run.sh to start the test client. Run server/unrun.sh to kill the servers.
